@@ -135,6 +135,10 @@ class TestAccountService(TestCase):
         data = resp.get_json()
         self.assertEqual(data["name"], account.name)
 
+    def test_get_account_not_found(self):
+        """It should not Read an Account that is not found"""
+        resp = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_list_accounts(self):
         """It should List all Accounts"""
@@ -144,3 +148,33 @@ class TestAccountService(TestCase):
         data = resp.get_json()
         self.assertEqual(len(data), 3)  # Ensure we get 3 accounts
 
+#######################################################
+    def test_update_existing_account(self):
+        """It should successfully update an existing account"""
+        test_account = Account(name="Old Name", email="old@example.com")
+        test_account.create()
+
+        updated_data = {"name": "Updated Name", "email": "updated@example.com"}
+
+        # Send the PUT request
+        resp = self.client.put(f"{BASE_URL}/{test_account.id}", json=updated_data)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+        # Fetch the updated account from the database
+        updated_account = Account.find(test_account.id)
+        self.assertIsNotNone(updated_account)
+
+        # Ensure update() executed and data changed
+        self.assertEqual(updated_account.name, "Updated Name")
+        self.assertEqual(updated_account.email, "updated@example.com")
+
+    
+    def test_update_nonexistent_account(self):
+        """It should return 404 when trying to update a non-existent account"""
+        updated_data = {"name": "Updated Name", "email": "updated@example.com"}
+
+        # Send PUT request to a non-existent account ID
+        resp = self.client.put(f"{BASE_URL}/99999", json=updated_data)
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
