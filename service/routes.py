@@ -115,12 +115,32 @@ def update_account(account_id):
 ######################################################################
 # DELETE AN ACCOUNT
 ######################################################################
+@app.route("/accounts/<int:account_id>", methods=["DELETE"])
+def delete_account(account_id):
+    """
+    Delete an Account
+    """
+    app.logger.info("Request to delete Account with id: %s", account_id)
 
-# ... place you code here to DELETE an account ...
+    account = Account.find(account_id)
+    if not account:
+        abort(status.HTTP_404_NOT_FOUND, description=f"Account with id [{account_id}] could not be found.")
 
+    account.delete()
+    return "", status.HTTP_204_NO_CONTENT
 
+'''
+######################################################################
+# ERROR HANDLERS
+######################################################################
+@app.errorhandler(status.HTTP_404_NOT_FOUND)
+def not_found(error):
+    """Handles 404 errors and returns a JSON response"""
+    response = jsonify(message=error.description, status=status.HTTP_404_NOT_FOUND)
+    response.status_code = status.HTTP_404_NOT_FOUND
+    return response
 
-
+'''
 
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
