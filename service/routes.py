@@ -52,8 +52,15 @@ def create_accounts():
 
 # ... place you code here to LIST accounts ...
 
-
-
+@app.route("/accounts", methods=["GET"])
+def list_accounts():
+    """
+    List all Accounts
+    """
+    app.logger.info("Request to list all Accounts")
+    accounts = Account.all()  # Fetch all accounts from DB
+    results = [account.serialize() for account in accounts]
+    return jsonify(results), status.HTTP_200_OK
 
 
 ######################################################################
@@ -71,10 +78,17 @@ def get_accounts(account_id):
     return jsonify(account.serialize()), status.HTTP_200_OK
 
 '''
-def test_get_account_not_found(self):
-    """It should not Read an Account that is not found"""
-    resp = self.client.get(f"{BASE_URL}/0")
-    self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+1. return account.serialize(), status.HTTP_200_OK
+Here, account.serialize() is likely returning a dictionary.
+Flask will automatically convert this dictionary into a JSON response when returning it.
+However, if account.serialize() is not a dictionary (e.g., it returns a list or some other data structure), Flask may not handle it properly.
+
+2. return jsonify(account.serialize()), status.HTTP_200_OK
+jsonify() ensures the response is properly formatted as a JSON object.
+It explicitly sets the Content-Type to application/json, making sure the response is treated as JSON.
+It is recommended when returning JSON data to avoid potential issues with how Flask auto-converts responses.
+Key Takeaway
+Using jsonify() is the safer and more explicit way to return JSON data in a Flask app, as it ensures correct encoding and response headers.
 '''
 ######################################################################
 # UPDATE AN EXISTING ACCOUNT
