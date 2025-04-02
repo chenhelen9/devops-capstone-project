@@ -93,8 +93,23 @@ Using jsonify() is the safer and more explicit way to return JSON data in a Flas
 ######################################################################
 # UPDATE AN EXISTING ACCOUNT
 ######################################################################
+@app.route("/accounts/<int:account_id>", methods=["PUT"])
+def update_account(account_id):
+    """
+    Updates an Account
+    This endpoint will update an Account based on the provided account_id
+    """
+    app.logger.info("Request to update Account with id: %s", account_id)
+    check_content_type("application/json")
 
-# ... place you code here to UPDATE an account ...
+    account = Account.find(account_id)
+    if not account:
+        abort(status.HTTP_404_NOT_FOUND, f"Account with id [{account_id}] could not be found.")
+
+    account.deserialize(request.get_json())  # Update account fields
+    account.update()  # Save changes
+
+    return account.serialize(), status.HTTP_200_OK
 
 
 ######################################################################
