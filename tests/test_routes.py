@@ -159,15 +159,19 @@ class TestAccountService(TestCase):
         # Send the PUT request
         resp = self.client.put(f"{BASE_URL}/{test_account.id}", json=updated_data)
 
+        # Check if the response is successful
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
-        # Fetch the updated account from the database
+        # Ensure update() executed and data changed
         updated_account = Account.find(test_account.id)
         self.assertIsNotNone(updated_account)
-
-        # Ensure update() executed and data changed
         self.assertEqual(updated_account.name, "Updated Name")
         self.assertEqual(updated_account.email, "updated@example.com")
+
+        # Ensure serialize() executed correctly by checking the response JSON
+        response_data = resp.get_json()
+        self.assertEqual(response_data["name"], "Updated Name")
+        self.assertEqual(response_data["email"], "updated@example.com")
 
     
     def test_update_nonexistent_account(self):
@@ -178,3 +182,27 @@ class TestAccountService(TestCase):
         resp = self.client.put(f"{BASE_URL}/99999", json=updated_data)
 
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+
+    def test_delete_account_not_found(self):
+        """It should return 404 when deleting a non-existent account"""
+        resp = self.client.delete(f"{BASE_URL}/0")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    
+    def test_delete_existing_account(self):
+        """It should successfully delete an existing account"""
+        test_account = Account(name="Delete Me", email="delete@example.com")
+        test_account.create()
+
+        # Ensure account exists before deletion
+        self.assertIsNotNone(Account.find(test_account.id))
+
+        # Send DELETE request
+        resp = self.client.delete(f"{BASE_URL}/{test_account.id}")
+
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        
+        # Ensure the account no longer exists
+        deleted_account = Account.find(test_account.id)
+        self.assertIsNone(deleted_account)
