@@ -6,3 +6,9 @@ on:
   pull_request:
     branches: add-ci-build
       - main
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: python:3.9-slim
