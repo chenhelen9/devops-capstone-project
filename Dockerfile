@@ -16,6 +16,4 @@ USER theia
 EXPOSE 8080
 CMD ["gunicorn", "--bind=0.0.0.0:8080", "--log-level=info", "service:app"]
 
-# Save the URL link to your Dockerfile on GitHub
-
-Save the URL link to your Dockerfile on GitHub
+# This is the URL for reference: https://accounts-sn-labs-chenhelen9.labs-prod-openshift-san-a45631dc5778dc6371c67d206ba9ae5c-0000.us-east.containers.appdomain.cloud/
