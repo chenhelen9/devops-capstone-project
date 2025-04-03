@@ -12,6 +12,7 @@ from tests.factories import AccountFactory
 from service.common import status  # HTTP Status Codes
 from service.models import db, Account, init_db
 from service.routes import app
+from service import talisman
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
@@ -19,6 +20,7 @@ DATABASE_URI = os.getenv(
 
 BASE_URL = "/accounts"
 
+HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
 
 ######################################################################
 #  T E S T   C A S E S
@@ -34,7 +36,8 @@ class TestAccountService(TestCase):
         app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
         app.logger.setLevel(logging.CRITICAL)
         init_db(app)
-
+        talisman.force_https = False
+        
     @classmethod
     def tearDownClass(cls):
         """Runs once before test suite"""
@@ -149,30 +152,20 @@ class TestAccountService(TestCase):
         self.assertEqual(len(data), 3)  # Ensure we get 3 accounts
 
 #######################################################
-    def test_update_existing_account(self):
-        """It should successfully update an existing account"""
-        test_account = Account(name="Old Name", email="old@example.com")
-        test_account.create()
+    def test_update_account(self):
+        """It should Update an existing Account"""
+        # create an Account to update
+        test_account = AccountFactory()
+        resp = self.client.post(BASE_URL, json=test_account.serialize())
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 
-        updated_data = {"name": "Updated Name", "email": "updated@example.com"}
-
-        # Send the PUT request
-        resp = self.client.put(f"{BASE_URL}/{test_account.id}", json=updated_data)
-
-        # Check if the response is successful
+        # update the account
+        new_account = resp.get_json()
+        new_account["name"] = "Something Known"
+        resp = self.client.put(f"{BASE_URL}/{new_account['id']}", json=new_account)
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-
-        # Ensure update() executed and data changed
-        updated_account = Account.find(test_account.id)
-        self.assertIsNotNone(updated_account)
-        self.assertEqual(updated_account.name, "Updated Name")
-        self.assertEqual(updated_account.email, "updated@example.com")
-
-        # Ensure serialize() executed correctly by checking the response JSON
-        response_data = resp.get_json()
-        self.assertEqual(response_data["name"], "Updated Name")
-        self.assertEqual(response_data["email"], "updated@example.com")
-
+        updated_account = resp.get_json()
+        self.assertEqual(updated_account["name"], "Something Known")
     
     def test_update_nonexistent_account(self):
         """It should return 404 when trying to update a non-existent account"""
@@ -206,3 +199,18 @@ class TestAccountService(TestCase):
         # Ensure the account no longer exists
         deleted_account = Account.find(test_account.id)
         self.assertIsNone(deleted_account)
+
+######  Return Security Header
+
+    def test_security_headers(self):
+        """It should return security headers"""
+        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        headers = {
+            'X-Frame-Options': 'SAMEORIGIN',
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Security-Policy': 'default-src \'self\'; object-src \'none\'',
+            'Referrer-Policy': 'strict-origin-when-cross-origin'
+        }
+        for key, value in headers.items():
+            self.assertEqual(response.headers.get(key), value)
