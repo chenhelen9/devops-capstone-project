@@ -15,3 +15,7 @@ USER theia
 # Run the service
 EXPOSE 8080
 CMD ["gunicorn", "--bind=0.0.0.0:8080", "--log-level=info", "service:app"]
+
+# Save the URL link to your Dockerfile on GitHub
+
+Save the URL link to your Dockerfile on GitHub
